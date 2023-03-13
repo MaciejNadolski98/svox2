@@ -376,6 +376,8 @@ while True:
     def eval_step():
         # Put in a function to avoid memory leak
         print('Eval step')
+        start_time = time()
+        total_rays = 0
         with torch.no_grad():
             stats_test = {'psnr' : 0.0, 'mse' : 0.0}
 
@@ -404,6 +406,7 @@ while True:
                                    width=dset_test.get_image_size(img_id)[1],
                                    height=dset_test.get_image_size(img_id)[0],
                                    ndc_coeffs=dset_test.ndc_coeffs)
+                total_rays += cam.height * cam.width
                 rgb_pred_test = grid.volume_render_image(cam, use_kernel=True)
                 rgb_gt_test = dset_test.gt[img_id].to(device=device)
                 all_mses = ((rgb_gt_test - rgb_pred_test) ** 2).cpu()
@@ -467,6 +470,8 @@ while True:
                         stats_test[stat_name], global_step=gstep_id_base)
             summary_writer.add_scalar('epoch_id', float(epoch_id), global_step=gstep_id_base)
             print('eval stats:', stats_test)
+        print(f'rays_per_second={total_rays / (time() - start_time)}')
+
     if epoch_id % max(factor, args.eval_every) == 0: #and (epoch_id > 0 or not args.tune_mode):
         # NOTE: we do an eval sanity check, if not in tune_mode
         eval_step()
@@ -603,7 +608,7 @@ while True:
                 elif grid.basis_type == svox2.BASIS_TYPE_MLP:
                     optim_basis_mlp.step()
                     optim_basis_mlp.zero_grad()
-        print(f'rays_per_second={epoch_size / (start_time - time())}')
+        print(f'rays_per_second={epoch_size / (time() - start_time)}')
 
     train_step()
     gc.collect()
