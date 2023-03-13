@@ -28,6 +28,7 @@ from torch.utils.tensorboard import SummaryWriter
 
 from tqdm import tqdm
 from typing import NamedTuple, Optional, Union
+from time import time
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -473,6 +474,7 @@ while True:
 
     def train_step():
         print('Train step')
+        start_time = time()
         pbar = tqdm(enumerate(range(0, epoch_size, args.batch_size)), total=batches_per_epoch)
         stats = {"mse" : 0.0, "psnr" : 0.0, "invsqr_mse" : 0.0}
         for iter_id, batch_begin in pbar:
@@ -601,6 +603,7 @@ while True:
                 elif grid.basis_type == svox2.BASIS_TYPE_MLP:
                     optim_basis_mlp.step()
                     optim_basis_mlp.zero_grad()
+        print(f'rays_per_second={epoch_size / (start_time - time())}')
 
     train_step()
     gc.collect()
